@@ -9,7 +9,7 @@ authors = [
 requires-python = ">=3.13.3"
 dependencies = [
     "pandas>=3.0.1",
-    "polars>=1.38.1",
+    "pydantic>=2.12.5",
 ]
 
 [dependency-groups]
@@ -22,3 +22,4 @@ dev = [
 
 [tool.mypy]
 ignore_missing_imports = true
+plugins = ["pydantic.mypy"]
