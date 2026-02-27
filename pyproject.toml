@@ -1,5 +1,5 @@
 [project]
-name = "kleister-nda-preprocessing"
+name = "nda"
 version = "0.1.0"
 description = "Processing and formatting data from the Kleister NDA dataset for KIE tasks with LLMs."
 readme = "README.md"
@@ -12,6 +12,9 @@ dependencies = [
     "pydantic>=2.12.5",
 ]
 
+[project.scripts]
+nda = "nda.main:main"
+
 [dependency-groups]
 dev = [
     "ipykernel>=7.2.0",
@@ -23,3 +26,7 @@ dev = [
 [tool.mypy]
 ignore_missing_imports = true
 plugins = ["pydantic.mypy"]
+
+[build-system]
+requires = ["uv_build>=0.10.4,<0.11.0"]
+build-backend = "uv_build"

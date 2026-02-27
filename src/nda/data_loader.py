@@ -3,6 +3,8 @@ import pandas as pd
 from pathlib import Path
 from typing import Literal
 
+Partition = Literal["train", "dev-0", "test-A"]
+
 
 class DataLoader:
     def __init__(self, data_dir: Path):
@@ -11,9 +13,7 @@ class DataLoader:
             data_dir / "in-header.tsv", sep="\t", encoding="utf-8", nrows=0
         ).columns.tolist()
 
-    def load(
-        self, partition: Literal["train", "dev-0", "test-A"] = "train"
-    ) -> pd.DataFrame:
+    def load(self, partition: Partition = "train") -> pd.DataFrame:
         if partition == "test-A":
             return self._read_data(partition)
         return pd.concat(
