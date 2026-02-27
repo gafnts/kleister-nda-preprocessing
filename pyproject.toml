@@ -1,6 +1,11 @@
 [project]
 name = "kleister-nda-preprocessing"
 version = "0.1.0"
+description = "Processing and formatting data from the Kleister NDA dataset for KIE tasks with LLMs."
+readme = "README.md"
+authors = [
+    { name = "Gabriel Fuentes", email = "gafnts@gmail.com" }
+]
 requires-python = ">=3.13.3"
 dependencies = [
     "pandas>=3.0.1",
@@ -10,4 +15,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "ipykernel>=7.2.0",
+    "pre-commit>=4.5.1",
+    "mypy>=1.19.1",
+    "ruff>=0.15.4",
 ]
