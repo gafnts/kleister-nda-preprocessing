@@ -1,14 +1,16 @@
 import pandas as pd
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
+
 
 Partition = Literal["train", "dev-0", "test-A"]
 
 
 class DataLoader:
-    def __init__(self, data_dir: Path):
+    def __init__(self, data_dir: Path, output_dir: Optional[Path] = None):
         self.data_dir = data_dir
+        self.output_dir = output_dir
         self._column_names = pd.read_csv(
             data_dir / "in-header.tsv", sep="\t", encoding="utf-8", nrows=0
         ).columns.tolist()
@@ -20,7 +22,21 @@ class DataLoader:
             [self._read_data(partition), self._read_labels(partition)], axis=1
         )
 
-    def _read_data(self, partition: str) -> pd.DataFrame:
+    def export(self, df: pd.DataFrame, partition: Partition = "train") -> pd.DataFrame:
+        if self.output_dir is None:
+            raise ValueError("Output directory has not been set yet.")
+        output_path = self.output_dir / partition
+        output_path.mkdir(parents=True, exist_ok=True)
+        df.to_csv(
+            output_path / "dataset.tsv.xz",
+            sep="\t",
+            encoding="utf-8",
+            compression="xz",
+            index=False,
+            header=True,
+        )
+
+    def _read_data(self, partition: Partition) -> pd.DataFrame:
         return pd.read_csv(
             self.data_dir / partition / "in.tsv.xz",
             sep="\t",
@@ -30,7 +46,7 @@ class DataLoader:
             names=self._column_names,
         )
 
-    def _read_labels(self, partition: str) -> pd.DataFrame:
+    def _read_labels(self, partition: Partition) -> pd.DataFrame:
         return pd.read_csv(
             self.data_dir / partition / "expected.tsv",
             sep="\t",
