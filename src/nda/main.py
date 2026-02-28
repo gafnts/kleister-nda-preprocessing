@@ -6,6 +6,7 @@ from pathlib import Path
 
 from nda.data_loader import DataLoader, Partition
 from nda.label_transformer import LabelTransformer
+from nda.document_relocator import DocumentRelocator
 
 
 logging.basicConfig(
@@ -41,6 +42,17 @@ def parse_labels(
     return transformed
 
 
+def relocate_documents(dataframes: List[pd.DataFrame]) -> None:
+    logger.info("Relocating documents for all partitions")
+    DocumentRelocator.relocate(
+        dataframes,
+        list(PARTITIONS),
+        DATA_DIR,
+        OUTPUT_DIR,
+    )
+    logger.info("Documents relocated for all partitions")
+
+
 def store_parquet(dataframes: List[pd.DataFrame]) -> None:
     for df, partition in zip(dataframes, PARTITIONS):
         logger.info("Storing parquet for partition: %s, shape: %s", partition, df.shape)
@@ -50,9 +62,19 @@ def store_parquet(dataframes: List[pd.DataFrame]) -> None:
 
 def main() -> None:
     logger.info("Starting main pipeline")
+
+    logger.info("Execute data loading")
     train, val, test = load_data()
+
+    logger.info("Execute label parsing")
     train, val, test = parse_labels([train, val, test])
+
+    logger.info("Execute document relocation")
+    relocate_documents([train, val, test])
+
+    logger.info("Execute parquet file storage")
     store_parquet([train, val, test])
+
     logger.info("Pipeline completed")
 
 
