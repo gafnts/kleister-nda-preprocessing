@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 DATA_DIR: Path = Path(__file__).parent / "static" / "data"
 OUTPUT_DIR: Path = Path(__file__).parent / "static" / "outputs"
-PARTITIONS: tuple[Partition, Partition, Partition] = ("train", "dev-0", "test-A")
+PARTITIONS: tuple[Partition, ...] = ("train", "dev-0", "test-A")
 
 
 def load_data() -> list[pd.DataFrame]:

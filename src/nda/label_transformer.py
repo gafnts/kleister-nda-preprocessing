@@ -64,7 +64,7 @@ class LabelTransformer:
 
         effective_date = result.get("effective_date", [""])[0]
         jurisdiction = result.get("jurisdiction", [""])[0]
-        term = result.get("term", [None])[0]
+        term = result.get("term", [""])[0]
         parties = result.get("party", [])
         party = [Party(name=p) for p in parties]
 

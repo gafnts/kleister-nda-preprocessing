@@ -25,6 +25,6 @@ class NDA(BaseModel):
     party: list[Party] = Field(
         ..., description="Party or parties involved in the contract."
     )
-    term: str | None = Field(
+    term: str = Field(
         ..., description="Length of the legal contract as expressed in the document."
     )
