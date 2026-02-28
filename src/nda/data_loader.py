@@ -1,16 +1,15 @@
 import pandas as pd
 
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 
 Partition = Literal["train", "dev-0", "test-A"]
 
 
 class DataLoader:
-    def __init__(self, data_dir: Path, output_dir: Optional[Path] = None):
+    def __init__(self, data_dir: Path):
         self.data_dir = data_dir
-        self.output_dir = output_dir
         self._column_names = pd.read_csv(
             data_dir / "in-header.tsv", sep="\t", encoding="utf-8", nrows=0
         ).columns.tolist()

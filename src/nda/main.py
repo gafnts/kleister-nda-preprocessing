@@ -1,8 +1,20 @@
+import logging
 import pandas as pd
 
-from pathlib import Path
 from typing import List
+from pathlib import Path
+
 from nda.data_loader import DataLoader, Partition
+from nda.label_transformer import LabelTransformer
+from nda.document_relocator import DocumentRelocator
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+
+logger = logging.getLogger(__name__)
 
 
 DATA_DIR: Path = Path(__file__).parent / "static" / "data"
@@ -11,24 +23,59 @@ PARTITIONS: tuple[Partition, Partition, Partition] = ("train", "dev-0", "test-A"
 
 
 def load_data() -> List[pd.DataFrame]:
-    loader = DataLoader(
-        data_dir=DATA_DIR,
-        output_dir=OUTPUT_DIR,
+    logger.info("Loading data for partitions: %s", PARTITIONS)
+    loader = DataLoader(DATA_DIR)
+    dataframes = [loader.load(partition) for partition in PARTITIONS]
+    logger.info("Loaded dataframes: %s", [df.shape for df in dataframes])
+    return dataframes
+
+
+def parse_labels(
+    dataframes: List[pd.DataFrame],
+) -> List[pd.DataFrame]:
+    logger.info("Parsing labels for dataframes")
+    transformed = [
+        LabelTransformer.transform(df, partition)
+        for df, partition in zip(dataframes, PARTITIONS)
+    ]
+    logger.info("Labels parsed for all partitions")
+    return transformed
+
+
+def relocate_documents(dataframes: List[pd.DataFrame]) -> None:
+    logger.info("Relocating documents for all partitions")
+    DocumentRelocator.relocate(
+        dataframes,
+        list(PARTITIONS),
+        DATA_DIR,
+        OUTPUT_DIR,
     )
+    logger.info("Documents relocated for all partitions")
 
-    return [loader.load(partition) for partition in PARTITIONS]
 
-
-def jsonify_labels() -> None:
-    pass
+def store_parquet(dataframes: List[pd.DataFrame]) -> None:
+    for df, partition in zip(dataframes, PARTITIONS):
+        logger.info("Storing parquet for partition: %s, shape: %s", partition, df.shape)
+        LabelTransformer.to_parquet(df, OUTPUT_DIR / partition)
+    logger.info("All partitions stored as parquet")
 
 
 def main() -> None:
+    logger.info("Starting main pipeline")
+
+    logger.info("Execute data loading")
     train, val, test = load_data()
 
-    print(train.shape)
-    print(val.shape)
-    print(test.shape)
+    logger.info("Execute label parsing")
+    train, val, test = parse_labels([train, val, test])
+
+    logger.info("Execute document relocation")
+    relocate_documents([train, val, test])
+
+    logger.info("Execute parquet file storage")
+    store_parquet([train, val, test])
+
+    logger.info("Pipeline completed")
 
 
 if __name__ == "__main__":
