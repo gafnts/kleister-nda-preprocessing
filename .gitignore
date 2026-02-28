@@ -207,4 +207,4 @@ marimo/_lsp/
 __marimo__/
 
 # Output directory for converted labels
-./src/nda/static/outputs/*
+src/nda/static/outputs/*
