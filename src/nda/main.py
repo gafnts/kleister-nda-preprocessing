@@ -11,15 +11,11 @@ PARTITIONS: tuple[Partition, Partition, Partition] = ("train", "dev-0", "test-A"
 
 
 def load_data() -> List[pd.DataFrame]:
-    loader = DataLoader(
-        data_dir=DATA_DIR,
-        output_dir=OUTPUT_DIR,
-    )
-
+    loader = DataLoader(DATA_DIR)
     return [loader.load(partition) for partition in PARTITIONS]
 
 
-def jsonify_labels() -> None:
+def parse_labels() -> None:
     pass
 
 
