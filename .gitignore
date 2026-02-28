@@ -206,5 +206,8 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# Output directory for converted labels
+# macOS 
+.DS_Store
+
+# Output directory for data and documents
 src/nda/static/outputs/*
