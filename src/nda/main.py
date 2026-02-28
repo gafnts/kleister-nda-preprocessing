@@ -1,4 +1,7 @@
+import pandas as pd
+
 from pathlib import Path
+from typing import List
 from nda.data_loader import DataLoader, Partition
 
 
@@ -7,20 +10,25 @@ OUTPUT_DIR: Path = Path(__file__).parent / "static" / "outputs"
 PARTITIONS: tuple[Partition, Partition, Partition] = ("train", "dev-0", "test-A")
 
 
-def load_data() -> None:
+def load_data() -> List[pd.DataFrame]:
     loader = DataLoader(
         data_dir=DATA_DIR,
         output_dir=OUTPUT_DIR,
     )
 
-    train, val, test = [loader.load(partition) for partition in PARTITIONS]
+    return [loader.load(partition) for partition in PARTITIONS]
 
-    for df, partition in zip((train, val, test), PARTITIONS):
-        loader.export(df, partition)
+
+def jsonify_labels() -> None:
+    pass
 
 
 def main() -> None:
-    load_data()
+    train, val, test = load_data()
+
+    print(train.shape)
+    print(val.shape)
+    print(test.shape)
 
 
 if __name__ == "__main__":

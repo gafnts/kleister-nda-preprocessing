@@ -22,20 +22,6 @@ class DataLoader:
             [self._read_data(partition), self._read_labels(partition)], axis=1
         )
 
-    def export(self, df: pd.DataFrame, partition: Partition = "train") -> None:
-        if self.output_dir is None:
-            raise ValueError("Output directory has not been set yet.")
-        output_path = self.output_dir / partition
-        output_path.mkdir(parents=True, exist_ok=True)
-        df.to_csv(
-            output_path / "dataset.tsv.xz",
-            sep="\t",
-            encoding="utf-8",
-            compression="xz",
-            index=False,
-            header=True,
-        )
-
     def _read_data(self, partition: Partition) -> pd.DataFrame:
         return pd.read_csv(
             self.data_dir / partition / "in.tsv.xz",
