@@ -31,7 +31,7 @@ def load_data() -> list[pd.DataFrame]:
 def parse_labels(
     dataframes: list[pd.DataFrame],
 ) -> list[pd.DataFrame]:
-    logger.info("Parsing labels for dataframes")
+    logger.info("Parsing labels for all partitions")
     transformed = [
         LabelTransformer.transform(df, partition)
         for df, partition in zip(dataframes, PARTITIONS)
@@ -51,11 +51,13 @@ def relocate_documents(dataframes: list[pd.DataFrame]) -> None:
     logger.info("Documents relocated for all partitions")
 
 
-def store_parquet(dataframes: list[pd.DataFrame]) -> None:
+def store_parquets(dataframes: list[pd.DataFrame]) -> None:
     for df, partition in zip(dataframes, PARTITIONS):
         logger.info("Storing parquet for partition: %s, shape: %s", partition, df.shape)
-        LabelTransformer.to_parquet(df, OUTPUT_DIR / partition)
-    logger.info("All partitions stored as parquet")
+        output_dir = OUTPUT_DIR / partition
+        output_dir.mkdir(parents=True, exist_ok=True)
+        df.to_parquet(output_dir / "data.parquet.gzip", index=False, compression="gzip")
+    logger.info("All partitions have been stored as parquet")
 
 
 def main() -> None:
@@ -71,7 +73,7 @@ def main() -> None:
     relocate_documents([train, val, test])
 
     logger.info("Execute parquet file storage")
-    store_parquet([train, val, test])
+    store_parquets([train, val, test])
 
     logger.info("Pipeline completed")
 

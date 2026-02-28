@@ -1,5 +1,4 @@
 from collections import defaultdict
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -30,11 +29,6 @@ class LabelTransformer:
                 )
             )
         )
-
-    @staticmethod
-    def to_parquet(df: pd.DataFrame, output_dir: Path) -> None:
-        output_dir.mkdir(parents=True, exist_ok=True)
-        df.to_parquet(output_dir / "data.parquet.gzip", index=False, compression="gzip")
 
     @staticmethod
     def sort_label_fields(string: str) -> str:
