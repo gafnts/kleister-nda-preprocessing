@@ -18,9 +18,7 @@ def to_parquet(
     for df, partition in zip(dataframes, partitions):
         partition_dir = output_dir / partition
         partition_dir.mkdir(parents=True, exist_ok=True)
-        df.to_parquet(
-            partition_dir / "data.parquet.gzip", index=False, compression="gzip"
-        )
+        df.to_parquet(partition_dir / "data.parquet", index=False, compression="gzip")
 
 
 def relocate_documents(
