@@ -14,17 +14,17 @@ class NDA(BaseModel):
         * all of them should be in the same format: `{number}_{units}`
     """
 
-    effective_date: str = Field(
-        ...,
+    effective_date: str | None = Field(
+        None,
         description="Date in `YYYY-MM-DD` format, at which point the contract is legally binding.",
     )
-    jurisdiction: str = Field(
-        ...,
+    jurisdiction: str | None = Field(
+        None,
         description="Under which state _or_ country jurisdiction is the contract signed.",
     )
     party: list[Party] = Field(
-        ..., description="Party or parties involved in the contract."
+        default_factory=list, description="Party or parties involved in the contract."
     )
-    term: str = Field(
-        ..., description="Length of the legal contract as expressed in the document."
+    term: str | None = Field(
+        None, description="Length of the legal contract as expressed in the document."
     )

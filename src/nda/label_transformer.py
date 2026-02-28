@@ -52,9 +52,9 @@ def parse_label_to_schema(string: str) -> dict[str, Any]:
         key, _, value = token.partition("=")
         result[key].append(value)
 
-    effective_date = result.get("effective_date", [""])[0]
-    jurisdiction = result.get("jurisdiction", [""])[0]
-    term = result.get("term", [""])[0]
+    effective_date = result.get("effective_date", [None])[0]
+    jurisdiction = result.get("jurisdiction", [None])[0]
+    term = result.get("term", [None])[0]
     parties = result.get("party", [])
     party = [Party(name=p) for p in parties]
 
@@ -73,16 +73,16 @@ def label_schema_to_string(nda_dict: dict[str, Any]) -> str:
 
     for key in ["effective_date", "jurisdiction"]:
         value = nda_dict.get(key)
-        if value:
+        if value is not None:
             parts.append(f"{key}={value}")
 
     for party in nda_dict.get("party", []):
         name = party.get("name")
-        if name:
+        if name is not None:
             parts.append(f"party={name}")
 
     term = nda_dict.get("term")
-    if term:
+    if term is not None:
         parts.append(f"term={term}")
 
     return " ".join(parts)
