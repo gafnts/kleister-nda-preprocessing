@@ -11,7 +11,7 @@ class LabelConverter:
     def __init__(self, df: pd.DataFrame) -> None:
         self.df = df
 
-    def convert_labels(self, partition: Partition = "train") -> pd.DataFrame:
+    def convert(self, partition: Partition = "train") -> pd.DataFrame:
         if partition == "test-A":
             return self.df
         return (

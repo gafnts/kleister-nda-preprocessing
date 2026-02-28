@@ -19,8 +19,12 @@ def load_data() -> List[pd.DataFrame]:
 
 def parse_labels(dataframes: Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]) -> None:
     for partition, df in zip(PARTITIONS, dataframes):
-        df = LabelConverter(df).convert_labels(partition)
-        df.to_parquet(OUTPUT_DIR / f"{partition}_converted.parquet", index=False)
+        df = LabelConverter(df).convert(partition)
+        output_path = OUTPUT_DIR / f"{partition}"
+        output_path.mkdir(parents=True, exist_ok=True)
+        df.to_parquet(
+            output_path / f"{partition}.parquet.gzip", index=False, compression="gzip"
+        )
 
 
 def main() -> None:
