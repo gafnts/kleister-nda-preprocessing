@@ -4,13 +4,16 @@ from collections import defaultdict
 from typing import List, Tuple, Any, Dict
 
 from nda.schema import NDA, Party
+from nda.data_loader import Partition
 
 
 class LabelConverter:
     def __init__(self, df: pd.DataFrame) -> None:
         self.df = df
 
-    def convert_labels(self) -> pd.DataFrame:
+    def convert_labels(self, partition: Partition = "train") -> pd.DataFrame:
+        if partition == "test-A":
+            return self.df
         return (
             self.df.assign(
                 labels_canonical=lambda df: df.labels.apply(self.sort_label_fields)
