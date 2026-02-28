@@ -1,8 +1,7 @@
 import shutil
-import pandas as pd
-
-from typing import List
 from pathlib import Path
+
+import pandas as pd
 
 from nda.data_loader import Partition
 
@@ -10,8 +9,8 @@ from nda.data_loader import Partition
 class DocumentRelocator:
     @staticmethod
     def relocate(
-        dataframes: List[pd.DataFrame],
-        partitions: List[Partition],
+        dataframes: list[pd.DataFrame],
+        partitions: list[Partition],
         data_dir: Path,
         output_dir: Path,
     ) -> None:

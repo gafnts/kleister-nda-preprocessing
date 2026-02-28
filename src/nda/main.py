@@ -1,13 +1,11 @@
 import logging
-import pandas as pd
-
-from typing import List
 from pathlib import Path
 
-from nda.data_loader import DataLoader, Partition
-from nda.label_transformer import LabelTransformer
-from nda.document_relocator import DocumentRelocator
+import pandas as pd
 
+from nda.data_loader import DataLoader, Partition
+from nda.document_relocator import DocumentRelocator
+from nda.label_transformer import LabelTransformer
 
 logging.basicConfig(
     level=logging.INFO,
@@ -22,7 +20,7 @@ OUTPUT_DIR: Path = Path(__file__).parent / "static" / "outputs"
 PARTITIONS: tuple[Partition, Partition, Partition] = ("train", "dev-0", "test-A")
 
 
-def load_data() -> List[pd.DataFrame]:
+def load_data() -> list[pd.DataFrame]:
     logger.info("Loading data for partitions: %s", PARTITIONS)
     loader = DataLoader(DATA_DIR)
     dataframes = [loader.load(partition) for partition in PARTITIONS]
@@ -31,8 +29,8 @@ def load_data() -> List[pd.DataFrame]:
 
 
 def parse_labels(
-    dataframes: List[pd.DataFrame],
-) -> List[pd.DataFrame]:
+    dataframes: list[pd.DataFrame],
+) -> list[pd.DataFrame]:
     logger.info("Parsing labels for dataframes")
     transformed = [
         LabelTransformer.transform(df, partition)
@@ -42,7 +40,7 @@ def parse_labels(
     return transformed
 
 
-def relocate_documents(dataframes: List[pd.DataFrame]) -> None:
+def relocate_documents(dataframes: list[pd.DataFrame]) -> None:
     logger.info("Relocating documents for all partitions")
     DocumentRelocator.relocate(
         dataframes,
@@ -53,7 +51,7 @@ def relocate_documents(dataframes: List[pd.DataFrame]) -> None:
     logger.info("Documents relocated for all partitions")
 
 
-def store_parquet(dataframes: List[pd.DataFrame]) -> None:
+def store_parquet(dataframes: list[pd.DataFrame]) -> None:
     for df, partition in zip(dataframes, PARTITIONS):
         logger.info("Storing parquet for partition: %s, shape: %s", partition, df.shape)
         LabelTransformer.to_parquet(df, OUTPUT_DIR / partition)

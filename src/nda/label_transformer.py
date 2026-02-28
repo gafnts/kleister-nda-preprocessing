@@ -1,11 +1,11 @@
+from collections import defaultdict
+from pathlib import Path
+from typing import Any
+
 import pandas as pd
 
-from pathlib import Path
-from collections import defaultdict
-from typing import List, Tuple, Any, Dict
-
-from nda.schema import NDA, Party
 from nda.data_loader import Partition
+from nda.schema import NDA, Party
 
 
 class LabelTransformer:
@@ -40,21 +40,21 @@ class LabelTransformer:
     def sort_label_fields(string: str) -> str:
         schema_order = ["effective_date", "jurisdiction", "party", "term"]
 
-        pairs: List[Tuple[str, str]] = []
+        pairs: list[tuple[str, str]] = []
         for part in string.strip().split():
             if "=" in part:
                 key, value = part.split("=", 1)
                 pairs.append((key, value))
 
-        grouped: dict[str, List[str]] = {k: [] for k in schema_order}
-        others: List[str] = []
+        grouped: dict[str, list[str]] = {k: [] for k in schema_order}
+        others: list[str] = []
         for key, value in pairs:
             if key in grouped:
                 grouped[key].append(f"{key}={value}")
             else:
                 others.append(f"{key}={value}")
 
-        result: List[str] = []
+        result: list[str] = []
         for key in schema_order:
             result.extend(grouped[key])
         result.extend(others)
@@ -84,8 +84,8 @@ class LabelTransformer:
         return nda.model_dump()
 
     @staticmethod
-    def label_schema_to_string(nda_dict: Dict[str, Any]) -> str:
-        parts: List[str] = []
+    def label_schema_to_string(nda_dict: dict[str, Any]) -> str:
+        parts: list[str] = []
 
         for key in ["effective_date", "jurisdiction"]:
             value = nda_dict.get(key)
