@@ -1,10 +1,31 @@
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
+class Party(BaseModel):
+    name: str = Field(..., description="Name of one party involved in the contract.")
+
+
 class NDA(BaseModel):
-    id: str = Field(..., description="Unique identifier for the NDA")
-    title: str = Field(..., description="Title of the NDA")
-    parties: list[str] = Field(..., description="List of parties involved in the NDA")
-    effective_date: str = Field(..., description="Effective date of the NDA")
-    expiration_date: str = Field(..., description="Expiration date of the NDA")
-    governing_law: str = Field(..., description="Governing law of the NDA")
+    """
+    * In attribute values, all spaces ` ` and colons `:` should be replaced with an underscore `_`
+    * The effective date should be returned in `YYYY-MM-DD` format
+    * Values for the attribute `term` should be normalized with the same original units, for example:
+        * `eleven months` is changed to `11_months`;
+        * all of them should be in the same format: `{number}_{units}`
+    """
+
+    effective_date: str = Field(
+        ...,
+        description="Date in `YYYY-MM-DD` format, at which point the contract is legally binding.",
+    )
+    jurisdiction: str = Field(
+        ...,
+        description="Under which state _or_ country jurisdiction is the contract signed.",
+    )
+    party: List[Party] = Field(
+        ..., description="Party or parties involved in the contract."
+    )
+    term: Optional[str] = Field(
+        ..., description="Length of the legal contract as expressed in the document."
+    )
