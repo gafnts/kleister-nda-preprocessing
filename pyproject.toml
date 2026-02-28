@@ -1,6 +1,6 @@
 [project]
 name = "nda"
-version = "0.1.1"
+version = "0.1.2"
 description = "Processing and formatting data from the Kleister NDA dataset for KIE tasks with LLMs."
 readme = "README.md"
 authors = [

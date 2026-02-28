@@ -1,10 +1,10 @@
 import pandas as pd
 
+from typing import List
 from pathlib import Path
-from typing import List, Tuple
 
 from nda.data_loader import DataLoader, Partition
-from nda.label_converter import LabelConverter
+from nda.label_transformer import LabelTransformer
 
 
 DATA_DIR: Path = Path(__file__).parent / "static" / "data"
@@ -17,23 +17,24 @@ def load_data() -> List[pd.DataFrame]:
     return [loader.load(partition) for partition in PARTITIONS]
 
 
-def parse_labels(dataframes: Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]) -> None:
-    for partition, df in zip(PARTITIONS, dataframes):
-        df = LabelConverter(df).convert(partition)
-        output_path = OUTPUT_DIR / f"{partition}"
-        output_path.mkdir(parents=True, exist_ok=True)
-        df.to_parquet(
-            output_path / f"{partition}.parquet.gzip", index=False, compression="gzip"
-        )
+def parse_labels(
+    dataframes: List[pd.DataFrame],
+) -> List[pd.DataFrame]:
+    return [
+        LabelTransformer.transform(df, partition)
+        for df, partition in zip(dataframes, PARTITIONS)
+    ]
+
+
+def store_parquet(dataframes: List[pd.DataFrame]) -> None:
+    for df, partition in zip(dataframes, PARTITIONS):
+        LabelTransformer.to_parquet(df, OUTPUT_DIR / partition)
 
 
 def main() -> None:
     train, val, test = load_data()
-    parse_labels((train, val, test))
-
-    print(train.shape)
-    print(val.shape)
-    print(test.shape)
+    train, val, test = parse_labels([train, val, test])
+    store_parquet([train, val, test])
 
 
 if __name__ == "__main__":

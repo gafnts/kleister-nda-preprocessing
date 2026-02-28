@@ -1,5 +1,6 @@
 import pandas as pd
 
+from pathlib import Path
 from collections import defaultdict
 from typing import List, Tuple, Any, Dict
 
@@ -7,28 +8,33 @@ from nda.schema import NDA, Party
 from nda.data_loader import Partition
 
 
-class LabelConverter:
-    def __init__(self, df: pd.DataFrame) -> None:
-        self.df = df
-
-    def convert(self, partition: Partition = "train") -> pd.DataFrame:
+class LabelTransformer:
+    @staticmethod
+    def transform(df: pd.DataFrame, partition: Partition) -> pd.DataFrame:
         if partition == "test-A":
-            return self.df
+            return df
         return (
-            self.df.assign(
-                labels_canonical=lambda df: df.labels.apply(self.sort_label_fields)
+            df.assign(
+                labels_canonical=lambda df: df.labels.apply(
+                    LabelTransformer.sort_label_fields
+                )
             )
             .assign(
                 labels_schema=lambda df: df.labels_canonical.apply(
-                    self.parse_label_to_schema
+                    LabelTransformer.parse_label_to_schema
                 )
             )
             .assign(
                 labels_serialized=lambda df: df.labels_schema.apply(
-                    self.label_schema_to_string
+                    LabelTransformer.label_schema_to_string
                 )
             )
         )
+
+    @staticmethod
+    def to_parquet(df: pd.DataFrame, output_dir: Path) -> None:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        df.to_parquet(output_dir / "data.parquet.gzip", index=False, compression="gzip")
 
     @staticmethod
     def sort_label_fields(string: str) -> str:
