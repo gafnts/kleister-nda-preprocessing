@@ -1,5 +1,6 @@
 import logging
 import shutil
+from collections.abc import Sequence
 from pathlib import Path
 
 import pandas as pd
@@ -10,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 def to_parquet(
-    dataframes: list[pd.DataFrame],
-    partitions: list[Partition],
+    dataframes: Sequence[pd.DataFrame],
+    partitions: Sequence[Partition],
     output_dir: Path,
 ) -> None:
     for df, partition in zip(dataframes, partitions):
@@ -23,8 +24,8 @@ def to_parquet(
 
 
 def relocate_documents(
-    dataframes: list[pd.DataFrame],
-    partitions: list[Partition],
+    dataframes: Sequence[pd.DataFrame],
+    partitions: Sequence[Partition],
     data_dir: Path,
     output_dir: Path,
 ) -> None:

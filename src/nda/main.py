@@ -43,7 +43,7 @@ def relocate_documents(dataframes: list[pd.DataFrame]) -> None:
     logger.info("Relocating documents for all partitions")
     utils.relocate_documents(
         dataframes,
-        list(PARTITIONS),
+        PARTITIONS,
         DATA_DIR,
         OUTPUT_DIR,
     )
@@ -52,7 +52,7 @@ def relocate_documents(dataframes: list[pd.DataFrame]) -> None:
 
 def store_parquets(dataframes: list[pd.DataFrame]) -> None:
     logger.info("Storing parquets for partitions: %s", PARTITIONS)
-    utils.to_parquet(dataframes, list(PARTITIONS), OUTPUT_DIR)
+    utils.to_parquet(dataframes, PARTITIONS, OUTPUT_DIR)
     logger.info("All partitions have been stored as parquet")
 
 
@@ -60,16 +60,16 @@ def main() -> None:
     logger.info("Starting main pipeline")
 
     logger.info("Execute data loading")
-    train, val, test = load_data()
+    dataframes = load_data()
 
     logger.info("Execute label parsing")
-    train, val, test = parse_labels([train, val, test])
+    dataframes = parse_labels(dataframes)
 
     logger.info("Execute document relocation")
-    relocate_documents([train, val, test])
+    relocate_documents(dataframes)
 
     logger.info("Execute parquet file storage")
-    store_parquets([train, val, test])
+    store_parquets(dataframes)
 
     logger.info("Pipeline completed")
 
