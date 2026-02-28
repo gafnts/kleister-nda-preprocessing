@@ -1,13 +1,10 @@
 import logging
-import pandas as pd
-
-from typing import List
 from pathlib import Path
 
-from nda.data_loader import DataLoader, Partition
-from nda.label_transformer import LabelTransformer
-from nda.document_relocator import DocumentRelocator
+import pandas as pd
 
+from nda import label_transformer, utils
+from nda.data_loader import DataLoader, Partition
 
 logging.basicConfig(
     level=logging.INFO,
@@ -19,10 +16,10 @@ logger = logging.getLogger(__name__)
 
 DATA_DIR: Path = Path(__file__).parent / "static" / "data"
 OUTPUT_DIR: Path = Path(__file__).parent / "static" / "outputs"
-PARTITIONS: tuple[Partition, Partition, Partition] = ("train", "dev-0", "test-A")
+PARTITIONS: tuple[Partition, ...] = ("train", "dev-0", "test-A")
 
 
-def load_data() -> List[pd.DataFrame]:
+def load_data() -> list[pd.DataFrame]:
     logger.info("Loading data for partitions: %s", PARTITIONS)
     loader = DataLoader(DATA_DIR)
     dataframes = [loader.load(partition) for partition in PARTITIONS]
@@ -31,49 +28,48 @@ def load_data() -> List[pd.DataFrame]:
 
 
 def parse_labels(
-    dataframes: List[pd.DataFrame],
-) -> List[pd.DataFrame]:
-    logger.info("Parsing labels for dataframes")
+    dataframes: list[pd.DataFrame],
+) -> list[pd.DataFrame]:
+    logger.info("Parsing labels for all partitions")
     transformed = [
-        LabelTransformer.transform(df, partition)
+        label_transformer.transform(df, partition)
         for df, partition in zip(dataframes, PARTITIONS)
     ]
     logger.info("Labels parsed for all partitions")
     return transformed
 
 
-def relocate_documents(dataframes: List[pd.DataFrame]) -> None:
+def relocate_documents(dataframes: list[pd.DataFrame]) -> None:
     logger.info("Relocating documents for all partitions")
-    DocumentRelocator.relocate(
+    utils.relocate_documents(
         dataframes,
-        list(PARTITIONS),
+        PARTITIONS,
         DATA_DIR,
         OUTPUT_DIR,
     )
     logger.info("Documents relocated for all partitions")
 
 
-def store_parquet(dataframes: List[pd.DataFrame]) -> None:
-    for df, partition in zip(dataframes, PARTITIONS):
-        logger.info("Storing parquet for partition: %s, shape: %s", partition, df.shape)
-        LabelTransformer.to_parquet(df, OUTPUT_DIR / partition)
-    logger.info("All partitions stored as parquet")
+def store_parquets(dataframes: list[pd.DataFrame]) -> None:
+    logger.info("Storing parquets for partitions: %s", PARTITIONS)
+    utils.to_parquet(dataframes, PARTITIONS, OUTPUT_DIR)
+    logger.info("All partitions have been stored as parquet")
 
 
 def main() -> None:
     logger.info("Starting main pipeline")
 
     logger.info("Execute data loading")
-    train, val, test = load_data()
+    dataframes = load_data()
 
     logger.info("Execute label parsing")
-    train, val, test = parse_labels([train, val, test])
+    dataframes = parse_labels(dataframes)
 
     logger.info("Execute document relocation")
-    relocate_documents([train, val, test])
+    relocate_documents(dataframes)
 
     logger.info("Execute parquet file storage")
-    store_parquet([train, val, test])
+    store_parquets(dataframes)
 
     logger.info("Pipeline completed")
 

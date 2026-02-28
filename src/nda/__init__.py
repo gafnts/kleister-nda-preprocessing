@@ -1,7 +1,5 @@
-from .schema import NDA
+from . import label_transformer, utils
 from .data_loader import DataLoader, Partition
-from .label_transformer import LabelTransformer
-from .document_relocator import DocumentRelocator
+from .schema import NDA
 
-
-__all__ = ["NDA", "DataLoader", "Partition", "LabelTransformer", "DocumentRelocator"]
+__all__ = ["NDA", "DataLoader", "Partition", "label_transformer", "utils"]

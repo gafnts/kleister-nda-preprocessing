@@ -1,8 +1,7 @@
-import pandas as pd
-
 from pathlib import Path
 from typing import Literal
 
+import pandas as pd
 
 Partition = Literal["train", "dev-0", "test-A"]
 

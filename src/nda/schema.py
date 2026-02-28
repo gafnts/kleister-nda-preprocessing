@@ -1,4 +1,3 @@
-from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -23,9 +22,9 @@ class NDA(BaseModel):
         ...,
         description="Under which state _or_ country jurisdiction is the contract signed.",
     )
-    party: List[Party] = Field(
+    party: list[Party] = Field(
         ..., description="Party or parties involved in the contract."
     )
-    term: Optional[str] = Field(
+    term: str = Field(
         ..., description="Length of the legal contract as expressed in the document."
     )
