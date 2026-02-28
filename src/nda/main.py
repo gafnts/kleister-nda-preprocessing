@@ -3,9 +3,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from nda import label_transformer, utils
 from nda.data_loader import DataLoader, Partition
-from nda.document_relocator import DocumentRelocator
-from nda.label_transformer import LabelTransformer
 
 logging.basicConfig(
     level=logging.INFO,
@@ -33,7 +32,7 @@ def parse_labels(
 ) -> list[pd.DataFrame]:
     logger.info("Parsing labels for all partitions")
     transformed = [
-        LabelTransformer.transform(df, partition)
+        label_transformer.transform(df, partition)
         for df, partition in zip(dataframes, PARTITIONS)
     ]
     logger.info("Labels parsed for all partitions")
@@ -42,7 +41,7 @@ def parse_labels(
 
 def relocate_documents(dataframes: list[pd.DataFrame]) -> None:
     logger.info("Relocating documents for all partitions")
-    DocumentRelocator.relocate(
+    utils.relocate_documents(
         dataframes,
         list(PARTITIONS),
         DATA_DIR,
@@ -52,11 +51,8 @@ def relocate_documents(dataframes: list[pd.DataFrame]) -> None:
 
 
 def store_parquets(dataframes: list[pd.DataFrame]) -> None:
-    for df, partition in zip(dataframes, PARTITIONS):
-        logger.info("Storing parquet for partition: %s, shape: %s", partition, df.shape)
-        output_dir = OUTPUT_DIR / partition
-        output_dir.mkdir(parents=True, exist_ok=True)
-        df.to_parquet(output_dir / "data.parquet.gzip", index=False, compression="gzip")
+    logger.info("Storing parquets for partitions: %s", PARTITIONS)
+    utils.to_parquet(dataframes, list(PARTITIONS), OUTPUT_DIR)
     logger.info("All partitions have been stored as parquet")
 
 
