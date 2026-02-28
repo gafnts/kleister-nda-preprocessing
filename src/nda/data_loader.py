@@ -22,7 +22,7 @@ class DataLoader:
             [self._read_data(partition), self._read_labels(partition)], axis=1
         )
 
-    def export(self, df: pd.DataFrame, partition: Partition = "train") -> pd.DataFrame:
+    def export(self, df: pd.DataFrame, partition: Partition = "train") -> None:
         if self.output_dir is None:
             raise ValueError("Output directory has not been set yet.")
         output_path = self.output_dir / partition
