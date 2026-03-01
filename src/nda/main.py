@@ -1,3 +1,8 @@
+"""
+Entry point for the NDA preprocessing pipeline.
+Prepares the Kleister NDA dataset for multimodal KIE tasks with LLMs.
+"""
+
 import logging
 from pathlib import Path
 
@@ -20,6 +25,9 @@ PARTITIONS: tuple[Partition, ...] = ("train", "dev-0", "test-A")
 
 
 def load_data() -> list[pd.DataFrame]:
+    """
+    Load raw data for all partitions from the data directory.
+    """
     logger.info("Loading data for partitions: %s", PARTITIONS)
     loader = DataLoader(DATA_DIR)
     dataframes = [loader.load(partition) for partition in PARTITIONS]
@@ -30,6 +38,9 @@ def load_data() -> list[pd.DataFrame]:
 def parse_labels(
     dataframes: list[pd.DataFrame],
 ) -> list[pd.DataFrame]:
+    """
+    Apply label transformations to all partition dataframes.
+    """
     logger.info("Parsing labels for all partitions")
     transformed = [
         label_transformer.transform(df, partition)
@@ -40,6 +51,9 @@ def parse_labels(
 
 
 def relocate_documents(dataframes: list[pd.DataFrame]) -> None:
+    """
+    Copy source documents into the output directory, organized by partition.
+    """
     logger.info("Relocating documents for all partitions")
     utils.relocate_documents(
         dataframes,
@@ -51,12 +65,20 @@ def relocate_documents(dataframes: list[pd.DataFrame]) -> None:
 
 
 def store_parquets(dataframes: list[pd.DataFrame]) -> None:
+    """
+    Persist all partition dataframes as parquet files in the output directory.
+    """
     logger.info("Storing parquets for partitions: %s", PARTITIONS)
     utils.to_parquet(dataframes, PARTITIONS, OUTPUT_DIR)
     logger.info("All partitions have been stored as parquet")
 
 
 def main() -> None:
+    """
+    Run the full NDA preprocessing pipeline end-to-end.
+    Produces processed parquets and relocated documents
+    ordered by partition in the output directory.
+    """
     logger.info("Starting main pipeline")
 
     logger.info("Execute data loading")

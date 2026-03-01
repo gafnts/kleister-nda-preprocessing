@@ -1,3 +1,7 @@
+"""
+Pydantic models defining the canonical NDA extraction schema.
+"""
+
 from pydantic import BaseModel, Field
 
 
