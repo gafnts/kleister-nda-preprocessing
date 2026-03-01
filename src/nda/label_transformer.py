@@ -1,3 +1,7 @@
+"""
+Label transformation pipeline from raw TSV strings to structured NDA schema records.
+"""
+
 from collections import defaultdict
 from typing import Any
 
@@ -8,6 +12,15 @@ from nda.schema import NDA, Party
 
 
 def transform(df: pd.DataFrame, partition: Partition) -> pd.DataFrame:
+    """
+    Add three label columns forming a round-trip validation pipeline.
+
+    - `labels_canonical`: raw labels reordered to the fixed NDA schema field order.
+    - `labels_schema`: canonical parsed through the Pydantic NDA model, yielding
+      the effective ground truth, stored as dict for DataFrame compatibility.
+    - `labels_serialized`: schema serialised back to key=value; canonical == serialized
+      confirms consistent parsing and correct exclusion of decoy keys.
+    """
     if partition == "test-A":
         return df
     return (
@@ -22,6 +35,9 @@ def transform(df: pd.DataFrame, partition: Partition) -> pd.DataFrame:
 
 
 def sort_label_fields(string: str) -> str:
+    """
+    Reorder key=value pairs to match the canonical NDA schema field order.
+    """
     schema_order = ["effective_date", "jurisdiction", "party", "term"]
 
     pairs: list[tuple[str, str]] = []
@@ -46,15 +62,18 @@ def sort_label_fields(string: str) -> str:
 
 
 def parse_label_to_schema(string: str) -> dict[str, Any]:
+    """
+    Parse a raw label string into a validated NDA model dictionary.
+    """
     result: defaultdict[str, list[str]] = defaultdict(list)
 
     for token in string.strip().split():
         key, _, value = token.partition("=")
         result[key].append(value)
 
-    effective_date = result.get("effective_date", [""])[0]
-    jurisdiction = result.get("jurisdiction", [""])[0]
-    term = result.get("term", [""])[0]
+    effective_date = result.get("effective_date", [None])[0]
+    jurisdiction = result.get("jurisdiction", [None])[0]
+    term = result.get("term", [None])[0]
     parties = result.get("party", [])
     party = [Party(name=p) for p in parties]
 
@@ -69,20 +88,23 @@ def parse_label_to_schema(string: str) -> dict[str, Any]:
 
 
 def label_schema_to_string(nda_dict: dict[str, Any]) -> str:
+    """
+    Serialise an NDA model dictionary back to a normalised key=value label string.
+    """
     parts: list[str] = []
 
     for key in ["effective_date", "jurisdiction"]:
         value = nda_dict.get(key)
-        if value:
+        if value is not None:
             parts.append(f"{key}={value}")
 
     for party in nda_dict.get("party", []):
         name = party.get("name")
-        if name:
+        if name is not None:
             parts.append(f"party={name}")
 
     term = nda_dict.get("term")
-    if term:
+    if term is not None:
         parts.append(f"term={term}")
 
     return " ".join(parts)

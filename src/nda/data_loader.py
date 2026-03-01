@@ -1,3 +1,7 @@
+"""
+DataLoader for reading compressed TSV input files and expected labels by partition.
+"""
+
 from pathlib import Path
 from typing import Literal
 
@@ -7,6 +11,10 @@ Partition = Literal["train", "dev-0", "test-A"]
 
 
 class DataLoader:
+    """
+    Loads input and label TSV files for a given dataset partition.
+    """
+
     def __init__(self, data_dir: Path):
         self.data_dir = data_dir
         self._column_names = pd.read_csv(
@@ -14,6 +22,9 @@ class DataLoader:
         ).columns.tolist()
 
     def load(self, partition: Partition = "train") -> pd.DataFrame:
+        """
+        Return the input dataframe for the partition, joined with labels when available.
+        """
         if partition == "test-A":
             return self._read_data(partition)
         return pd.concat(
@@ -21,6 +32,9 @@ class DataLoader:
         )
 
     def _read_data(self, partition: Partition) -> pd.DataFrame:
+        """
+        Read the xz-compressed input TSV for the given partition.
+        """
         return pd.read_csv(
             self.data_dir / partition / "in.tsv.xz",
             sep="\t",
@@ -31,6 +45,9 @@ class DataLoader:
         )
 
     def _read_labels(self, partition: Partition) -> pd.DataFrame:
+        """
+        Read the expected.tsv label file for the given partition.
+        """
         return pd.read_csv(
             self.data_dir / partition / "expected.tsv",
             sep="\t",

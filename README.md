@@ -1,32 +1,131 @@
-Extract key information from Edgar NDA documents
-=====================================================================================
+# Kleister NDA: Dataset Preprocessing for LLM-based KIE
 
-Extract the information from NDAs (Non-Disclosure Agreements) about the involved parties,
-jurisdiction, contract term, etc.
+A Python preprocessing layer for the [Kleister NDA](https://github.com/applicaai/kleister-nda) dataset, designed to prepare data for multimodal Key Information Extraction (KIE) tasks using large language models in a serverless processing context.
 
-Note that this an information extraction task, you are given keys
-(labels, attribute names) and you are expected to guess their
-respective values. It is not a NER task, we are not interested in
-where the information or entity is to be found, just the information
-itself.
+The preprocessing pipeline reads the original dataset partitions, transforms raw TSV labels into structured records validated against a Pydantic schema, relocates the corresponding PDF documents, and writes the results as partitioned Parquet files ready for downstream inference workflows.
 
-The metric used is F1 score calculated on upper-cased values. As an
-auxiliary metric, also F1 on true-cased values is calculated.
+## Contents
 
-It should not be assumed that for each key, a corresponding value is
-to be extracted from a document. There might be some “decoy” keys, for
-which no value should be given.
+- [Installation](#installation)
+- [Running the preprocessing pipeline](#running-the-preprocessing-pipeline)
+- [Output structure](#output-structure)
+- [NDA schema](#nda-schema)
+- [Original dataset documentation](#original-dataset-documentation)
+  - [Evaluation](#evaluation)
+  - [Directory structure](#directory-structure)
+  - [Structure of data sets](#structure-of-data-sets)
+  - [Format of the test sets](#format-of-the-test-sets)
+  - [Information to be extracted](#information-to-be-extracted)
+  - [Normalization](#normalization)
+  - [Format of the output files for test sets](#format-of-the-output-files-for-test-sets)
+- [Sources](#sources)
 
-There might be more than value given for a given key. In such cases,
-more than one value should be given. You are allowed to give more than one value, even if one is expected
-(e.g. if you have two options, but you are not sure which is right), though, of course,
-the metric will be lower than just guessing the right value.
+---
 
-Evaluation
-----------
+## Installation
 
-You can carry out evaluation using the [GEval](https://gitlab.com/filipg/geval),
-when you generate `out.tsv` files (in the same format as `expected.tsv` files):
+The package requires Python 3.13 or later. Dependencies are managed with [uv](https://docs.astral.sh/uv/).
+
+Clone the repository and install the package with its dependencies:
+
+```bash
+git clone https://github.com/gafnts/kleister-nda-preprocessing.git
+cd kleister-nda-preprocessing
+uv sync
+```
+
+To include development dependencies (linting, type checking, testing):
+
+```bash
+uv sync --group dev
+```
+
+---
+
+## Running the preprocessing pipeline
+
+The package exposes a single CLI entry point that executes the full pipeline:
+
+```bash
+uv run nda
+```
+
+Alternatively, run the module directly:
+
+```bash
+uv run python -m nda.main
+```
+
+The pipeline performs the following steps in sequence:
+
+1. **Load** — reads the compressed TSV input files and, where available, the corresponding `expected.tsv` label files for each partition (`train`, `dev-0`, `test-A`).
+2. **Transform** — parses the raw label strings into structured dictionaries validated against the `NDA` Pydantic model, which is the official schema of the extraction task.
+3. **Relocate** — copies each partition's PDF documents from the shared `documents/` directory into the corresponding partition output directory.
+4. **Store** — serialises each partition's DataFrame as a gzip-compressed Parquet file.
+
+---
+
+## Output structure
+
+Running the pipeline creates an `outputs/` directory under `src/nda/static/`, organised by partition:
+
+```
+src/nda/static/outputs/
+├── train/
+│   ├── data.parquet
+│   └── documents/
+│       ├── <md5>.pdf
+│       └── ...
+├── dev-0/
+│   ├── data.parquet
+│   └── documents/
+│       ├── <md5>.pdf
+│       └── ...
+└── test-A/
+    ├── data.parquet
+    └── documents/
+        ├── <md5>.pdf
+        └── ...
+```
+
+Each `data.parquet` file contains one row per document. For the `train` and `dev-0` partitions, the dataset includes the raw input columns alongside the following label columns:
+
+| Column | Description |
+|---|---|
+| `labels` | Raw label string from `expected.tsv` |
+| `labels_canonical` | Label string sorted to match the schema field order |
+| `labels_schema` | Structured dictionary produced by `NDA.model_dump()` |
+| `labels_serialized` | Normalised label string reconstructed from the schema |
+
+The `test-A` partition contains only input columns, as ground truth labels are withheld.
+
+The `documents/` subdirectory within each partition contains only the PDF files referenced by that partition's records.
+
+---
+
+## NDA schema
+
+Labels are validated and serialised through the `NDA` Pydantic model, which is the canonical schema for the extraction task:
+
+```python
+class NDA(BaseModel):
+    effective_date: str | None  # YYYY-MM-DD
+    jurisdiction: str | None    # state or country
+    party: list[Party]          # one or more contracting parties
+    term: str | None            # e.g. "12_months"
+```
+
+All spaces and colons in field values are replaced with underscores. Dates are expressed in `YYYY-MM-DD` format. Contract terms are normalised to `{number}_{units}` form (e.g. `eleven months` becomes `11_months`).
+
+---
+
+## Original dataset documentation
+
+The sections below are reproduced from the [Kleister NDA dataset documentation](https://github.com/applicaai/kleister-nda) for reference. The original directory structure is preserved verbatim under `src/nda/static/data/`.
+
+### Evaluation
+
+Evaluation is carried out using [GEval](https://gitlab.com/filipg/geval) against `out.tsv` files in the same format as `expected.tsv`:
 
 ```
 wget https://gonito.net/get/bin/geval
@@ -34,144 +133,90 @@ chmod u+x geval
 ./geval -t dev-0
 ```
 
-Textual and graphical features
-------------------------------
+The primary metric is F1 score calculated on upper-cased values. F1 on true-cased values is reported as an auxiliary metric.
 
-1D (textual) and/or 2D (graphical) features can be considered, as both
-the generated PDF documents and the extracted text is available. PDF files were generated using
-[Puppeteer package](https://developers.google.com/web/tools/puppeteer/) from the original
-HTML files. We provide 4 different text outputs based on:
-* pdf2djvu/djvu2hocr tools, ver. `0.9.8`,
-* tesseract tool, ver. `4.1.1-rc1-7-gb36c`, ran with `--oem 2 -l eng --dpi 300` flags
-(meaning both new and old OCR engines were used simultaneously, and language and pixel
-density were forced for better results),
-* textract tool, ver. `March 1, 2020`,
-* combination of pdf2djvu/djvu2hocr and tesseract tools. Documents are processed with both tools, by
-default we take the text from pdf2djvu/djvu2hocr, unless the text returned by tesseract is 1000
-characters longer.
+### Directory structure
 
-It should not be assumed that the OCR-ed text layer is perfect.
-You are free to use alternative OCR software.
+```
+src/nda/static/data/
+├── README.md
+├── config.txt              — GEval configuration file
+├── in-header.tsv           — column names for input data
+├── train/
+│   ├── in.tsv.xz           — input data
+│   └── expected.tsv        — reference labels
+├── dev-0/
+│   ├── in.tsv.xz
+│   └── expected.tsv
+├── test-A/
+│   ├── in.tsv.xz
+│   └── expected.tsv        — hidden
+└── documents/              — all PDFs, referenced in TSV files
+```
 
-The texts are not tokenized nor pre-processed in any manner.
+Files are sorted by MD5 hash. TSV files use tab as the sole delimiter; double quotes are not treated as special characters (`QUOTE_NONE` in Python's `csv` module).
 
+### Structure of data sets
 
-Directory structure
--------------------
+The dataset was split in a stable pseudorandom manner using MD5 fingerprints of document contents:
 
-* `README.md` — this file
-* `config.txt` — GEval configuration file
-* `in-header.tsv` — one-line TSV file with column names for input data (features),
-* `train/` — directory with training data
-* `train/in.tsv.xz` — input data for the train set
-* `train/expected.tsv` — expected (reference) data for the train set
-* `dev-0/` — directory with dev (test) data from the same sources as the train set
-* `dev-0/in.tsv.xz` — input data for the dev set
-* `dev-0/expected.tsv` — expected (reference) data for the dev set
-* `test-A` — directory with test data
-* `test-A/in.tsv.xz` — input data for the test set
-* `test-A/expected.tsv` — expected (reference) data for the test set (hidden)
-* `documents/` — all documents (for train, dev-0 and test-A), they are references in TSV files
+| Partition | Items |
+|---|---|
+| train | 254 |
+| dev-0 | 83 |
+| test-A | 203 |
 
-Note that we mean TSV, *not* CSV files. In particular, double quotes
-are not considered special characters here! In particular, set
-`quoting` to `QUOTE_NONE` in the Python `csv` module:
+### Format of the test sets
 
-    import csv
-    with open('file.tsv', 'r') as tsvfile:
-        reader = csv.reader(tsvfile, delimiter='\t', quoting=csv.QUOTE_NONE)
-        for item in reader:
-            ...
+Each `in.tsv.xz` file contains six tab-separated columns per row:
 
-The files are sorted by MD5 sum hashes.
+1. Document filename (MD5 hash with file extension), referencing a file in `documents/`
+2. Alphabetically ordered list of keys to be predicted, space-separated
+3. Plain text from pdf2djvu/djvu2hocr
+4. Plain text from Tesseract
+5. Plain text from Textract
+6. Combined text from pdf2djvu/djvu2hocr and Tesseract
 
-Structure of data sets
-----------------------
+End-of-line characters, tabs, and non-printable characters in the text columns are replaced with spaces to avoid conflicts with TSV formatting.
 
-The original dataset was split into train, dev-0 and test-A subsets in
-a stable pseudorandom manner using the hashes (fingerprints) of the
-document contents:
+The following escape sequences appear in the OCR-extracted text:
 
-* the train set contains 254 items,
-* the dev-0 set contains 83 items,
-* the test-A set contains 203 items.
+| Sequence | Meaning |
+|---|---|
+| `\f` | Page break |
+| `\n` | End of line |
+| `\t` | Tabulation |
+| `\\` | Literal backslash |
 
+### Information to be extracted
 
-Format of the test sets
------------------------
+Up to four attributes are extracted from each document:
 
-The input file (`in.tsv.xz`) consists of 6 TAB-separated columns:
+| Attribute | Description |
+|---|---|
+| `effective_date` | Date (`YYYY-MM-DD`) at which the contract becomes legally binding |
+| `jurisdiction` | State or country jurisdiction under which the contract is signed |
+| `party` | Contracting party or parties (may appear multiple times) |
+| `term` | Length of the contract as expressed in the document |
 
-* the file name of the document (MD5 sum for binary contents with the
-  right extension), to be taken from the `documents/' subdirectory,
-* list of keys in alphabetical order to be considered during
-  prediction, keys are given in English with underscores in place of
-  spaces and are separated with spaces,
-* the plain text extracted by pdf2djvu/djvu2hocr tools from the document with the end-of-lines
-  TABs and non-printable characters replaced with spaces (so that they
-  would not be confused with TSV special characters),
-* the plain text extracted by tesseract tool from the document with the end-of-lines
-  TABs and non-printable characters replaced with spaces (so that they
-  would not be confused with TSV special characters),
-* the plain text extracted by textract tool from the document with the end-of-lines
-  TABs and non-printable characters replaced with spaces (so that they
-  would not be confused with TSV special characters),
-* the plain text extracted by combination of pdf2djvu/djvu2hocr and tesseract tools
-  from the document with the end-of-lines TABs and non-printable characters replaced
-  with spaces (so that they would not be confused with TSV special characters).
+Not every document contains all four attributes. Keys with no corresponding value are omitted from `expected.tsv`; they are not given with an empty value.
 
-The `expected.tsv` file is just a list of key-value pairs sorted
-alphabetically (by keys). Pairs are separated with spaces, value is
-separated from a key with the equals sign (`=`). The spaces and colons in values are
-replaced with underscores.
+### Normalization
 
-In case of “decoy” keys (with no expected values), they are omitted in
-`expected.tsv` files (they are *not* given with empty value).
+| Rule | Detail |
+|---|---|
+| Spaces and colons in values | Replaced with underscores |
+| Dates | Returned in `YYYY-MM-DD` format |
+| Contract term | Normalised to `{number}_{units}` (e.g. `eleven months` → `11_months`) |
 
-Escaping special characters
----------------------------
+### Format of the output files for test sets
 
-The following escape sequences are used for the OCR-ed text:
+The output format matches `expected.tsv`: a list of `key=value` pairs, one document per line, sorted alphabetically by key. The order of pairs within a line does not matter. Multiple values for the same key (e.g. multiple parties) appear as separate `key=value` tokens on the same line.
 
-* `\f` — page break (`^L`)
-* `\n` — end of line,
-* `\t` — tabulation
-* `\\` — literal backslash
+---
 
-Information to be extracted
----------------------------
+## Sources
 
-There are up to 6 attributes to be extracted from each document:
-
-* `effective_date` - date in `YYYY-MM-DD` format, at which point the contract is legally binding,
-* `jurisdiction` - under which state _or_ country jurisdiction is the contract signed,
-* `party` - party or parties of the contract,
-* `term` - length of the legal contract as expressed in the document.
-
-Note that `party` usually occur more than once.
-
-Normalization
--------------
-
-The expected pieces of information were normalized to some degree:
-
-* in attribute values, all spaces ` ` and colons `:` were replaced with an underscores `_`,
-* all expected dates should be returned in `YYYY-MM-DD` format,
-* values for attribute `term` are normalized with the same original units e.g. `eleven months`
-is changed to `11_months`; all of them are in the same format: `{number}_{units}`.
-
-Format of the output files for test sets
-----------------------------------------
-
-The format of the output is the same as the format of
-`expected.tsv` files. The order of key-value pairs does not matter.
-
-Format of the train set
------------------------
-
-The format of the train set is the same as the format of a test set.
-
-Sources
--------
-
-Original data was gathered from the [Edgar Database](https://www.sec.gov/edgar.shtml).
+- Dataset repository: [https://github.com/applicaai/kleister-nda](https://github.com/applicaai/kleister-nda)
+- Dataset paper: Gralinski et al., "Kleister: A novel long-document dataset for information extraction", arXiv:2105.05796 — [https://arxiv.org/abs/2105.05796](https://arxiv.org/abs/2105.05796)
+- Original data source: [Edgar Database](https://www.sec.gov/edgar.shtml)
