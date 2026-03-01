@@ -33,7 +33,7 @@ def parse_labels(
     logger.info("Parsing labels for all partitions")
     transformed = [
         label_transformer.transform(df, partition)
-        for df, partition in zip(dataframes, PARTITIONS)
+        for df, partition in zip(dataframes, PARTITIONS, strict=True)
     ]
     logger.info("Labels parsed for all partitions")
     return transformed
