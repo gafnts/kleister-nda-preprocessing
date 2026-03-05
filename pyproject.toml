@@ -50,6 +50,11 @@ mypy_path = "src"
 files = ["src", "tests"]
 plugins = ["pydantic.mypy"]
 
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_any_expr = false
+
 [tool.pydantic-mypy]
 init_forbid_extra = true
 init_typed = true
@@ -57,6 +62,7 @@ warn_required_dynamic_aliases = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 
 [tool.coverage.run]
 source = ["src"]
