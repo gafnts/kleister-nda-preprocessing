@@ -67,3 +67,4 @@ pythonpath = ["src"]
 [tool.coverage.run]
 source = ["src"]
 omit = ["src/nda/main.py"]
+branch = true
