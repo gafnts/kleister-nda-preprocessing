@@ -36,6 +36,7 @@ link-mode = "copy"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/nda"]
+exclude = ["src/nda/notebooks"]
 
 [tool.ruff]
 src = ["src"]
