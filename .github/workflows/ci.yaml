@@ -26,8 +26,14 @@ jobs:
       - name: Install dependencies
         run: uv sync --dev
 
-      - name: Run pre-commit
-        run: uv run pre-commit run --all-files
+      - name: Run ruff check
+        run: uv run ruff check
+
+      - name: Run ruff format
+        run: uv run ruff format --check
+
+      - name: Run mypy
+        run: uv run mypy
 
   test:
     runs-on: ubuntu-latest
@@ -52,3 +58,10 @@ jobs:
 
       - name: Run tests
         run: uv run pytest --cov --cov-report=xml -v
+
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v6
+        with:
+          name: code-coverage-report
+          path: coverage.xml
+          retention-days: 14
