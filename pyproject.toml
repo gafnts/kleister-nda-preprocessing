@@ -8,9 +8,11 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "altair>=6.0.0",
     "pandas>=3.0.1",
     "pyarrow>=23.0.1",
     "pydantic>=2.12.5",
+    "pymupdf>=1.27.1",
 ]
 
 [dependency-groups]
@@ -71,5 +73,5 @@ omit = ["src/nda/main.py"]
 branch = true
 
 [tool.coverage.report]
-fail_under = 70
+fail_under = 85
 show_missing = true

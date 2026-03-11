@@ -1,5 +1,8 @@
 # Kleister NDA: Dataset Preprocessing for LLM-based KIE
 
+[![CI](https://github.com/gafnts/kleister-nda-preprocessing/actions/workflows/ci.yaml/badge.svg)](https://github.com/gafnts/kleister-nda-preprocessing/actions/workflows/ci.yaml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
 A Python preprocessing layer for the [Kleister NDA](https://github.com/applicaai/kleister-nda) dataset, designed to prepare data for multimodal Key Information Extraction (KIE) tasks using large language models in a serverless processing context.
 
 The preprocessing pipeline reads the original dataset partitions, transforms raw TSV labels into structured records validated against a Pydantic schema, relocates the corresponding PDF documents, and writes the results as partitioned Parquet files ready for downstream inference workflows.
@@ -10,6 +13,12 @@ The preprocessing pipeline reads the original dataset partitions, transforms raw
 - [Running the preprocessing pipeline](#running-the-preprocessing-pipeline)
 - [Output structure](#output-structure)
 - [NDA schema](#nda-schema)
+- [Project structure](#project-structure)
+- [Development](#development)
+  - [Linting and formatting](#linting-and-formatting)
+  - [Type checking](#type-checking)
+  - [Testing](#testing)
+  - [Continuous integration](#continuous-integration)
 - [Original dataset documentation](#original-dataset-documentation)
   - [Evaluation](#evaluation)
   - [Directory structure](#directory-structure)
@@ -26,7 +35,7 @@ The preprocessing pipeline reads the original dataset partitions, transforms raw
 
 The package requires Python 3.13 or later. Dependencies are managed with [uv](https://docs.astral.sh/uv/).
 
-Clone the repository and install the package with its dependencies:
+Clone the repository and install the package with all dependencies (including dev tools):
 
 ```bash
 git clone https://github.com/gafnts/kleister-nda-preprocessing.git
@@ -34,10 +43,16 @@ cd kleister-nda-preprocessing
 uv sync
 ```
 
-To include development dependencies (linting, type checking, testing):
+Alternatively, use `make install` to sync dependencies **and** set up pre-commit hooks (both `pre-commit` and `pre-push`):
 
 ```bash
-uv sync --group dev
+make install
+```
+
+To install without development dependencies:
+
+```bash
+uv sync --no-dev
 ```
 
 ---
@@ -116,6 +131,72 @@ class NDA(BaseModel):
 ```
 
 All spaces and colons in field values are replaced with underscores. Dates are expressed in `YYYY-MM-DD` format. Contract terms are normalised to `{number}_{units}` form (e.g. `eleven months` becomes `11_months`).
+
+---
+
+## Project structure
+
+```
+src/nda/
+├── __init__.py              — package exports
+├── main.py                  — CLI entry point and pipeline orchestration
+├── data_loader.py           — DataLoader for compressed TSV inputs and labels
+├── label_transformer.py     — label parsing, sorting, and round-trip validation
+├── schema.py                — Pydantic models (NDA, Party)
+├── utils.py                 — document relocation and Parquet persistence
+├── notebooks/               — exploratory and development notebooks
+│   ├── data-loader.ipynb
+│   ├── eda.ipynb
+│   └── label-transformer.ipynb
+└── static/
+    ├── data/                — original dataset (TSV + PDFs)
+    └── outputs/             — pipeline outputs (Parquet + relocated PDFs)
+
+tests/
+├── test_data_loader.py
+├── test_label_transformer.py
+├── test_schema.py
+└── test_utils.py
+```
+
+---
+
+## Development
+
+### Linting and formatting
+
+The project uses [Ruff](https://docs.astral.sh/ruff/) for linting and formatting:
+
+```bash
+uv run ruff check           # lint
+uv run ruff format --check  # check formatting
+```
+
+### Type checking
+
+Strict type checking is enforced with [mypy](https://mypy-lang.org/) (with the Pydantic plugin):
+
+```bash
+uv run mypy
+```
+
+### Testing
+
+Tests are written with [pytest](https://docs.pytest.org/) and live in the `tests/` directory:
+
+```bash
+uv run pytest                             # run all tests
+uv run pytest --cov --cov-report=xml -v   # run with coverage
+```
+
+Coverage is configured to require a minimum of 85% (`fail_under = 85`).
+
+### Continuous integration
+
+A GitHub Actions workflow (`.github/workflows/ci.yaml`) runs on every push and pull request against `main`/`master`. It executes two sequential jobs:
+
+1. **lint-and-type-check** — runs `ruff check`, `ruff format --check`, and `mypy`.
+2. **test** — runs the full test suite with coverage and archives the coverage report as an artifact.
 
 ---
 

@@ -2,11 +2,19 @@
 Pydantic models defining the canonical NDA extraction schema.
 """
 
-from pydantic import BaseModel, Field
+import re
+from datetime import date
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class Party(BaseModel):
     name: str = Field(..., description="Name of one party involved in the contract.")
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def normalize_underscores(cls, v: str) -> str:
+        return v.replace(" ", "_").replace(":", "_")
 
 
 class NDA(BaseModel):
@@ -32,3 +40,34 @@ class NDA(BaseModel):
     term: str | None = Field(
         None, description="Length of the legal contract as expressed in the document."
     )
+
+    @field_validator("effective_date", mode="before")
+    @classmethod
+    def validate_effective_date(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        try:
+            date.fromisoformat(v)
+        except ValueError:
+            raise ValueError(
+                f"effective_date must be in YYYY-MM-DD format, got '{v}'"
+            ) from None
+        return v
+
+    @field_validator("jurisdiction", "term", mode="before")
+    @classmethod
+    def normalize_underscores(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        return v.replace(" ", "_").replace(":", "_")
+
+    @field_validator("term", mode="after")
+    @classmethod
+    def validate_term_format(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        if not re.fullmatch(r"\d+_\w+", v):
+            raise ValueError(
+                f"term must be in '{{number}}_{{units}}' format, got '{v}'"
+            ) from None
+        return v
