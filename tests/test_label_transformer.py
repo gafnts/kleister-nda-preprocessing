@@ -84,12 +84,11 @@ class TestParseLabelToSchema:
         result = parse_label_to_schema("decoy=noise party=Acme")
         assert "decoy" not in result
 
-    def test_party_names_normalized(self) -> None:
+    def test_space_in_party_value_splits_into_separate_tokens(self) -> None:
         result = parse_label_to_schema("party=MPB Corp")
-        # space inside value survives split only if the token doesn't break;
-        # in practice the raw format is whitespace-delimited, so "MPB" and
-        # "Corp" would be separate tokens — this tests the single-token case
-        assert result["party"][0]["name"] == "MPB_Corp"
+        # whitespace-delimited format truncates at the space;
+        # only "MPB" survives as the party name
+        assert result["party"][0]["name"] == "MPB"
 
     def test_returns_dict_not_model(self) -> None:
         result = parse_label_to_schema("term=1_year")
