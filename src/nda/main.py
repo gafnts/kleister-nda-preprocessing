@@ -3,6 +3,7 @@ Entry point for the NDA preprocessing pipeline.
 Prepares the Kleister NDA dataset for multimodal KIE tasks with LLMs.
 """
 
+import argparse
 import logging
 from pathlib import Path
 
@@ -22,6 +23,17 @@ logger = logging.getLogger(__name__)
 DATA_DIR: Path = Path(__file__).parent / "static" / "data"
 OUTPUT_DIR: Path = Path(__file__).parent / "static" / "outputs"
 PARTITIONS: tuple[Partition, ...] = ("train", "dev-0", "test-A")
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the NDA preprocessing pipeline.")
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=OUTPUT_DIR,
+        help="Directory where processed outputs are written (default: %(default)s).",
+    )
+    return parser.parse_args()
 
 
 def load_data() -> list[pd.DataFrame]:
@@ -50,7 +62,7 @@ def parse_labels(
     return transformed
 
 
-def relocate_documents(dataframes: list[pd.DataFrame]) -> None:
+def relocate_documents(dataframes: list[pd.DataFrame], output_dir: Path) -> None:
     """
     Copy source documents into the output directory, organized by partition.
     """
@@ -59,17 +71,17 @@ def relocate_documents(dataframes: list[pd.DataFrame]) -> None:
         dataframes,
         PARTITIONS,
         DATA_DIR,
-        OUTPUT_DIR,
+        output_dir,
     )
     logger.info("Documents relocated for all partitions")
 
 
-def store_parquets(dataframes: list[pd.DataFrame]) -> None:
+def store_parquets(dataframes: list[pd.DataFrame], output_dir: Path) -> None:
     """
     Persist all partition dataframes as parquet files in the output directory.
     """
     logger.info("Storing parquets for partitions: %s", PARTITIONS)
-    utils.to_parquet(dataframes, PARTITIONS, OUTPUT_DIR)
+    utils.to_parquet(dataframes, PARTITIONS, output_dir)
     logger.info("All partitions have been stored as parquet")
 
 
@@ -79,7 +91,11 @@ def main() -> None:
     Produces processed parquets and relocated documents
     ordered by partition in the output directory.
     """
+    args = parse_args()
+    output_dir: Path = args.output_dir
+
     logger.info("Starting main pipeline")
+    logger.info("Output directory: %s", output_dir)
 
     logger.info("Execute data loading")
     dataframes = load_data()
@@ -88,10 +104,10 @@ def main() -> None:
     dataframes = parse_labels(dataframes)
 
     logger.info("Execute document relocation")
-    relocate_documents(dataframes)
+    relocate_documents(dataframes, output_dir)
 
     logger.info("Execute parquet file storage")
-    store_parquets(dataframes)
+    store_parquets(dataframes, output_dir)
 
     logger.info("Pipeline completed")
 
